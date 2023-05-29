@@ -51,7 +51,7 @@ io.on('connection', (socket) => {
 });
 
 app.get('/', (req, res) => {
-  console.log('tolbel Inc. server is running');
+  console.log('tolbel Inc. server is running', process.env.NODE_ENV);
   res.send('Welcome to tolbel Inc.');
 });
 // listen for connection

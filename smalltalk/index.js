@@ -49,6 +49,7 @@ io.on('connection', (socket) => {
 });
 
 app.get('/', (req, res) => {
+  console.log('tolbel Inc. ; it working now.');
   res.send('Welcome to tolbel Inc.');
 });
 // listen for connection

@@ -3,6 +3,8 @@ import { Server } from 'socket.io';
 import { app } from '../index.js';
 import { createServer } from 'http';
 import { lastSeen } from './datastr/index.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // handlers
 import onDisconnect from './sockets/handlers/ondisconnect.js';
@@ -24,7 +26,7 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000/',
+    origin: process.env.REMOTE_ALLOW_ORIGIN || 'http://localhost:3000/',
   },
 });
 
@@ -53,7 +55,7 @@ app.get('/', (req, res) => {
   res.send('Welcome to tolbel Inc.');
 });
 // listen for connection
-server.listen(4040, () => {
+server.listen(process.env.PORT || 4040, () => {
   console.log('listening on port : 4040');
 });
 

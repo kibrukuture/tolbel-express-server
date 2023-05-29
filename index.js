@@ -19,7 +19,7 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 app.use(
   cors({
-    origin: '*',
+    origin: 'https://www.tolbel.com',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     // allowedHeaders: ['Content-Type', 'Authorization'],
     // credentials: true,

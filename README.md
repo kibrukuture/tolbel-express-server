@@ -1,6 +1,6 @@
 # tolbel-express-server
 
-tolbel is end to end chat app 
+tolbel is an end to end chat app 
 
 
 ## Features 

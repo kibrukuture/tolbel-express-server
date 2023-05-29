@@ -43,7 +43,7 @@ export const signInUserMiddleware = async (req, res) => {
     const token = jwt.sign({ email }, process.env.JWT_SECRET, {
       expiresIn: '1d',
     });
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.header('Access-Control-Allow-Origin', process.env.REMOTE_ALLOW_ORIGIN);
     return res.status(200).json({
       status: 'ok',
       token,
@@ -147,7 +147,7 @@ export const logInCheckUserMiddleware = async (req, res) => {
     // user found
     if (data.length) {
       // token
-      res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+      res.header('Access-Control-Allow-Origin', process.env.REMOTE_ALLOW_ORIGIN);
       return res.status(200).json({
         status: 'ok',
         data: {

@@ -48,6 +48,9 @@ io.on('connection', (socket) => {
   // socket.on('user:rejectFriendRequest', (data) => onRejectFriendRequest(socket, data)); // reject friend request
 });
 
+app.get('/', (req, res) => {
+  res.send('Welcome to tolbel Inc.');
+});
 // listen for connection
 server.listen(4040, () => {
   console.log('listening on port : 4040');

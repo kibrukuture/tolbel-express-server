@@ -51,12 +51,12 @@ io.on('connection', (socket) => {
 });
 
 app.get('/', (req, res) => {
-  console.log('tolbel Inc. ; it working now.');
+  console.log('tolbel Inc. server is running');
   res.send('Welcome to tolbel Inc.');
 });
 // listen for connection
 server.listen(process.env.PORT || 4040, () => {
-  console.log('listening on port : 4040');
+  console.log(`Listening at PORT No: ${process.env.PORT}`);
 });
 
 export default io;

@@ -42,11 +42,11 @@ export default async function sendAccountVerificationSMS(code, url, name, mailTo
   }
 }
 
-(async () => {
-  let res = await sendAccountVerificationSMS('456 358', 'hello world', 'James');
+// (async () => {
+//   let res = await sendAccountVerificationSMS('456 358', 'hello world', 'James');
 
-  console.log(res);
-})('456 358', 'hello world', 'James');
+//   console.log(res);
+// })('456 358', 'hello world', 'James');
 
 function smsHtml(code = '456 358', url = 'tolbel.com/sigup', name) {
   return `

@@ -20,13 +20,14 @@ import onEndCall from './sockets/handlers/onEndCall.js';
 import onCallAccepted from './sockets/handlers/onCallAccepted.js';
 import onRemotePeerCallEnd from './sockets/handlers/onRemotePeerCallEnd.js';
 import onDeleteConversation from './sockets/handlers/onDeleteConversation.js';
+import { getAllowOrigin } from '../index.js';
 
 // server setup
 const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.REMOTE_ALLOW_ORIGIN || 'http://localhost:3000/',
+    origin: getAllowOrigin(),
   },
 });
 

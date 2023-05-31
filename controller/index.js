@@ -4,7 +4,9 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { v2 as cloudinary } from 'cloudinary';
+import { getAllowOrigin } from '../index.js';
 import getChatRooms from '../smalltalk/socket_related_db/getChatRooms.js';
+import sendAccountVerificationSMS from '../account-verification/mailSender.js';
 dotenv.config();
 
 // configure cloudinary
@@ -43,7 +45,7 @@ export const signInUserMiddleware = async (req, res) => {
     const token = jwt.sign({ email }, process.env.JWT_SECRET, {
       expiresIn: '1d',
     });
-    res.header('Access-Control-Allow-Origin', process.env.REMOTE_ALLOW_ORIGIN);
+    res.header('Access-Control-Allow-Origin', getAllowOrigin());
     return res.status(200).json({
       status: 'ok',
       token,
@@ -55,6 +57,143 @@ export const signInUserMiddleware = async (req, res) => {
     // user found but password or email is incorrect
     return res.status(401).json({
       message: 'Invalid password or email, please try again',
+    });
+  }
+};
+
+export function generateJwtToken(payload, secretKey) {
+  return jwt.sign(payload, secretKey, { algorithm: 'HS256' });
+}
+
+export function verifyJwtToken(token, secretKey) {
+  try {
+    const payload = jwt.verify(token, secretKey, { algorithm: 'HS256' });
+    return payload;
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      return { error: 'TokenExpiredError' };
+    } else {
+      return { error: 'UnauthorizedError' };
+    }
+  }
+}
+
+export const tolbelAccountVerificationMiddleware = async (req, res) => {
+  const { email, code, userName } = req.body;
+
+  console.log(email, code, userName);
+
+  const { data, error } = await supabase.from('signup').select('*').eq('email', email);
+
+  if (error) {
+    return res.status(401).json({
+      message: error.message,
+      status: 'error',
+    });
+  }
+
+  if (data.length === 0) {
+    return res.status(401).json({
+      message: 'User not found, please sign up',
+      status: 'error',
+    });
+  }
+
+  const tempCode = code.trim().replace(/\s/g, '');
+
+  console.log('&', tempCode, data[0].smsCode, 'request body: ', req.body);
+  if (tempCode === data[0].smsCode + '') {
+    const { data: onSignUpUserData, error: onSignUpUserError } = await supabase.from('user').insert({
+      email,
+      userName,
+      name: data[0].name,
+      password: data[0].password,
+    });
+
+    if (onSignUpUserError) {
+      return res.status(401).json({
+        message: onSignUpUserError.message,
+        status: 'error',
+      });
+    }
+    // delete user  from signup table
+    const { data: onSignUpUserDeleteData, error: onSignUpUserDeleteError } = await supabase.from('signup').delete().eq('email', email);
+
+    if (onSignUpUserDeleteError) {
+      return res.status(401).json({
+        message: onSignUpUserDeleteError.message,
+        status: 'error',
+      });
+    }
+
+    return res.status(200).json({
+      status: 'ok',
+    });
+  }
+};
+
+export const tolbelAccountVerificationByUrlMiddleware = async (req, res) => {
+  try {
+    const { token, smsCode } = req.body;
+
+    console.log(token, smsCode);
+
+    const payload = verifyJwtToken(token, process.env.JWT_SECRET);
+    console.log(payload);
+
+    if (payload.email && payload.userName) {
+      const { data, error } = await supabase.from('signup').select('*').eq('email', payload.email);
+
+      if (error) {
+        return res.status(401).json({
+          message: error.message,
+          status: 'error',
+        });
+      }
+      // user already verified check first.
+      if (data.length === 0) {
+        return res.status(200).json({
+          message: 'User already verified',
+          status: 'ok',
+        });
+      }
+      if (smsCode === data[0].smsCode + '') {
+        const { data: onSignUpUserData, error: onSignUpUserError } = await supabase.from('user').insert({
+          email: payload.email,
+          userName: payload.userName,
+          name: data[0].name,
+          password: data[0].password,
+        });
+
+        if (onSignUpUserError) {
+          return res.status(401).json({
+            message: onSignUpUserError.message,
+            status: 'error',
+          });
+        }
+        // delete user  from signup table
+        const { data: onSignUpUserDeleteData, error: onSignUpUserDeleteError } = await supabase.from('signup').delete().eq('email', payload.email);
+
+        if (onSignUpUserDeleteError) {
+          return res.status(401).json({
+            message: onSignUpUserDeleteError.message,
+            status: 'error',
+          });
+        }
+
+        return res.status(200).json({
+          status: 'ok',
+        });
+      }
+    } else
+      return res.status(401).json({
+        message: 'Link expired',
+        status: 'error',
+      });
+  } catch (e) {
+    return res.status(401).json({
+      message: e.message,
+      status: 'error',
     });
   }
 };
@@ -90,17 +229,26 @@ export const signUpUserMiddleware = async (req, res) => {
     });
   }
 
+  const generateSMSCode = () => {
+    const code = Math.floor(100000 + Math.random() * 900000);
+    const formattedCode = code.toString().replace(/(\d{3})(\d{3})/, '$1 $2');
+
+    return { code, formattedCode };
+  };
   // hash a user password
   const hashedPassword = await hashPassword(password);
-
+  const userSignUpJwtToken = generateJwtToken({ email, userName }, process.env.JWT_SECRET);
+  const sms = generateSMSCode();
   // insert user into db
   const { data: onSignUpUserData, error: onSignUpUserError } = await supabase
-    .from('user')
+    .from('signup')
     .insert({
       email,
       password: hashedPassword,
       name,
       userName,
+      smsCode: sms.code,
+      token: userSignUpJwtToken,
     })
     .select('*');
 
@@ -112,11 +260,25 @@ export const signUpUserMiddleware = async (req, res) => {
     });
   }
 
+  const url = process.env.REMOTE_ALLOW_ORIGIN + `/verify-account?token=${userSignUpJwtToken}&smsCode=${sms.code}`;
+
+  const accountVerif = await sendAccountVerificationSMS(sms.formattedCode, url, name);
+  console.log(accountVerif, url);
+  if (accountVerif.status === 'error') {
+    return res.status(401).json({
+      ...accountVerif,
+    });
+  }
+
   // user created
   return res.status(200).json({
     status: 'ok',
-    message: 'A user successfully signed up',
+    message: 'Success in signing up. Please verify your account',
   });
+};
+
+export const verifyAccountMiddleware = async (req, res) => {
+  const { token, smsCode } = req.query;
 };
 
 export const logInCheckUserMiddleware = async (req, res) => {
@@ -147,7 +309,7 @@ export const logInCheckUserMiddleware = async (req, res) => {
     // user found
     if (data.length) {
       // token
-      res.header('Access-Control-Allow-Origin', process.env.REMOTE_ALLOW_ORIGIN);
+      res.header('Access-Control-Allow-Origin', getAllowOrigin());
       return res.status(200).json({
         status: 'ok',
         data: {

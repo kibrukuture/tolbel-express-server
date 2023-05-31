@@ -31,7 +31,7 @@ export const signInUserMiddleware = async (req, res) => {
       message: error.message,
     });
   }
-
+  console.log('signing in user', data, req.body);
   // user not found
   if (!data.length) {
     return res.status(401).json({
@@ -262,7 +262,7 @@ export const signUpUserMiddleware = async (req, res) => {
 
   const url = process.env.REMOTE_ALLOW_ORIGIN + `/verify-account?token=${userSignUpJwtToken}&smsCode=${sms.code}`;
 
-  const accountVerif = await sendAccountVerificationSMS(sms.formattedCode, url, name);
+  const accountVerif = await sendAccountVerificationSMS(sms.formattedCode, url, name, email);
   console.log(accountVerif, url);
   if (accountVerif.status === 'error') {
     return res.status(401).json({

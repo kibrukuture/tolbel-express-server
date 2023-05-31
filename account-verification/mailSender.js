@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // verification mail sender
-export default async function sendAccountVerificationSMS(code, url, name) {
+export default async function sendAccountVerificationSMS(code, url, name, mailTo) {
   try {
     //transport obj
     let transporter = nodemailer.createTransport({
@@ -19,7 +19,7 @@ export default async function sendAccountVerificationSMS(code, url, name) {
     // send sms code
     let info = await transporter.sendMail({
       from: '"tolbel" <admin@tolbel.com>',
-      to: 'kibrukuture@gmail.com',
+      to: mailTo,
       subject: 'tolbel Account Verification',
       // text: 'Hello world?', // plain text body
       html: smsHtml(code, url, name),

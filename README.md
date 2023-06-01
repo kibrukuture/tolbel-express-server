@@ -38,7 +38,7 @@ For frontend codebase please visit : https://github.com/kibrukuture/tolbel-fe
 
 
 You don't need to clone Peer to Peer server, it is already deployed and running. Local repos can directly connect 
-to remote the Peer to Peer server deployed to railway. 
+to the remote Peer to Peer server, deployed to railway. 
 
 
 
